@@ -1,0 +1,49 @@
+# Requirements for Credit Risk & Loan Decision Intelligence Platform
+#
+# Covers implemented components: Phases 1–4 (Data Understanding, Preprocessing, Model Development, Risk Scoring, Model Evaluation & Explainability)
+# across both the 50-row synthetic pipeline and the 1,000-row UCI German Credit benchmark pipeline.
+# Future packages (e.g., streamlit, fastapi) will be introduced in subsequent phases.
+#
+# To install: pip install -r requirements.txt
+
+# --------------------------------------------------------------------------
+# Data Manipulation & Scientific Computing
+# --------------------------------------------------------------------------
+# pandas: Core tool for tabular manipulation, feature matrices, and dataset loading
+pandas>=2.0.0
+
+# numpy: Numerical arrays, matrix operations, and mathematical transformations
+numpy>=1.26.0
+
+# --------------------------------------------------------------------------
+# Machine Learning & Preprocessing
+# --------------------------------------------------------------------------
+# scikit-learn: ColumnTransformer, StandardScaler, OneHotEncoder, train_test_split, estimators
+scikit-learn>=1.3.0
+
+# xgboost: Scalable and efficient gradient boosted decision trees
+xgboost>=2.0.0
+
+# --------------------------------------------------------------------------
+# Model Explainability & Interpretability (Phase 4)
+# --------------------------------------------------------------------------
+# shap: SHapley Additive exPlanations for global and local model attribution
+shap>=0.52.0
+
+# --------------------------------------------------------------------------
+# Visualization & Exploratory Data Analysis
+# --------------------------------------------------------------------------
+# matplotlib: Base statistical plotting library for histograms and distributions
+matplotlib>=3.8.0
+
+# seaborn: High-level visualization for correlation heatmaps and boxplots
+seaborn>=0.13.0
+
+# --------------------------------------------------------------------------
+# Interactive Notebook Development
+# --------------------------------------------------------------------------
+# jupyterlab: Modern interactive computational notebook environment
+jupyterlab>=4.0.0
+
+# ipykernel: Connects Python virtual environment kernel to Jupyter notebooks
+ipykernel>=6.0.0

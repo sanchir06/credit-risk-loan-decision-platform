@@ -1,0 +1,95 @@
+# =============================================================================
+# .gitignore for Credit Risk & Loan Decision Intelligence Platform
+# =============================================================================
+# This file tells Git which files and folders to NOT track.
+# We want to share our code, but not large data files, trained models,
+# or sensitive environment variables.
+
+# -----------------------------------------------------------------------------
+# Python Cache Files
+# -----------------------------------------------------------------------------
+# Python creates these automatically when running code.
+# They are machine-specific and can always be regenerated — no need to commit them.
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# -----------------------------------------------------------------------------
+# Virtual Environment
+# -----------------------------------------------------------------------------
+# The virtual environment contains installed packages.
+# It can be huge (hundreds of MB) and everyone creates their own from requirements.txt.
+# Never commit the venv folder.
+venv/
+env/
+.env/
+.venv/
+ENV/
+
+# -----------------------------------------------------------------------------
+# Jupyter Notebook Temporary Files
+# -----------------------------------------------------------------------------
+# These are auto-created checkpoints that Jupyter saves internally.
+# They are not meaningful for version control.
+.ipynb_checkpoints/
+
+# -----------------------------------------------------------------------------
+# Trained Model Artifacts
+# -----------------------------------------------------------------------------
+# Saved models can be very large binary files.
+# We will store them locally but not in Git.
+# When we reach Phase 3+, we will document how to recreate them.
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.bin
+
+# -----------------------------------------------------------------------------
+# Environment Variables and Secrets
+# -----------------------------------------------------------------------------
+# Never commit API keys, database passwords, or other secrets.
+.env
+*.env
+local_settings.py
+
+# -----------------------------------------------------------------------------
+# Large Data Files
+# -----------------------------------------------------------------------------
+# Raw datasets are often too large for Git.
+# We document the dataset source so anyone can download it.
+# If the dataset is small enough, we may choose to include it.
+data/raw/*.csv
+data/raw/*.xlsx
+data/raw/*.parquet
+data/raw/*.zip
+
+# We DO want to commit processed data if it's small enough —
+# so we don't add data/processed/ to .gitignore by default.
+# If files become large, add them here:
+# data/processed/*.csv
+
+# -----------------------------------------------------------------------------
+# Operating System Files
+# -----------------------------------------------------------------------------
+# These are created by Windows/Mac/Linux file systems — not meaningful for the project.
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# IDE and Editor Files
+# -----------------------------------------------------------------------------
+# These are local editor settings — not meaningful for collaborators.
+.vscode/settings.json
+.idea/
+*.sublime-workspace
+
+# We DO commit .vscode/extensions.json if it has useful extension recommendations.
+
+# -----------------------------------------------------------------------------
+# Build and Distribution
+# -----------------------------------------------------------------------------
+dist/
+build/
+*.egg-info/
