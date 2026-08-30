@@ -98,10 +98,22 @@ FLOW B: CURRENT MACHINE LEARNING PIPELINE (notebooks/ & data/)
     Phase 3: Machine Learning Model Development & Decision Intelligence ✅ COMPLETE (notebooks/03, 04, 05)
               │
               ▼
-    Phase 4: Model Evaluation, Explainability & Final Selection ✅ COMPLETE (notebooks/11)
-              │
-              ▼
-    Phase 5: Decision Engine Pipeline & Serving ⏳ PLANNED
+    Phase 4: Model Evaluation, Explainability & Final Selection (notebook 11)
+              |
+              v
+    Phase 5 Step 1: Production Inference Pipeline (COMPLETE)
+        src/models/model_artifacts.py      -- Artifact management (save/load/validate)
+        src/prediction/predictor.py        -- CreditRiskPredictor (no notebook required)
+        src/prediction/schemas.py          -- UCI input schema & validation
+        src/prediction/risk_policy.py      -- Risk tier/decision policy
+        scripts/build_model_artifacts.py   -- Reproducible artifact build
+        tests/test_prediction_pipeline.py  -- 15-gate, 44-test validation suite
+              |
+              v
+    Phase 5 Step 2: FastAPI REST API (NOT STARTED)
+              |
+              v
+    Phase 5 Step 3: Streamlit Dashboard (NOT STARTED)
 ```
 
 ---
@@ -180,13 +192,35 @@ $$\text{Fit transformers strictly on } X_{\text{train}} \longrightarrow \text{Tr
 ## 8. Project Roadmap & Implementation Milestones
 
 ```
-Phase 1: Data Understanding & EDA             ✅ COMPLETE (notebooks/01 & 06)
-Phase 2: Data Preprocessing & Validation      ✅ COMPLETE (notebooks/02 & 07)
-Phase 3: Credit Risk ML Modeling & Scores     ✅ COMPLETE (notebooks/03, 04, 05, 08, 09)
-Comparative: Dataset Comparison & Governance  ✅ COMPLETE (notebooks/10)
-Phase 4: Model Evaluation & Explainability    ✅ COMPLETE (notebooks/11 - Step 1 & Step 2)
-Phase 5: Risk Scoring & Decision Engine       ⏳ PLANNED
-Phase 6: Product Integration & Dashboard      ⏳ PLANNED
+Phase 1: Data Understanding & EDA             COMPLETE (notebooks/01 & 06)
+Phase 2: Data Preprocessing & Validation      COMPLETE (notebooks/02 & 07)
+Phase 3: Credit Risk ML Modeling & Scores     COMPLETE (notebooks/03, 04, 05, 08, 09)
+Comparative: Dataset Comparison & Governance  COMPLETE (notebooks/10)
+Phase 4: Model Evaluation & Explainability    COMPLETE (notebooks/11 - Step 1 & Step 2)
+Phase 5 Step 1: Production Inference Layer    COMPLETE (src/models/, src/prediction/, scripts/, tests/)
+Phase 5 Step 2: FastAPI REST API              COMPLETE (api/main.py, api/schemas.py, tests/test_api.py)
+Phase 5 Step 3: Streamlit Dashboard           COMPLETE (streamlit_app.py, tests/test_streamlit_app.py)
+```
+
+### Production Architecture (Phase 5 Step 1–3)
+```
+User / Analyst
+      ↓
+Streamlit UI (streamlit_app.py)
+      ↓ HTTP JSON (POST /predict)
+FastAPI REST API (api/main.py)
+      ↓ Pydantic validation (api/schemas.py)
+CreditRiskPredictor (src/prediction/predictor.py)
+      ↓ Domain schema & range checks (src/prediction/schemas.py)
+Saved ColumnTransformer (.transform() only, models/preprocessing.joblib)
+      ↓ 61 one-hot encoded features
+Saved Logistic Regression (.predict_proba() only, models/credit_risk_model.joblib)
+      ↓ Estimated PD (Probability of Default)
+Risk Policy (src/prediction/risk_policy.py)
+      ↓ Score: (1 - PD) * 100, Tier: LOW/MEDIUM/HIGH, Decision: APPROVE/REVIEW/REJECT
+FastAPI PredictResponse
+      ↓ HTTP 200 JSON
+Streamlit Result Panel (KPI cards, badge styling, attribution disclaimer)
 ```
 
 ---
@@ -198,5 +232,9 @@ Phase 6: Product Integration & Dashboard      ⏳ PLANNED
 - [x] Zero-leakage preprocessing pipelines certified with automated assertion suites.
 - [x] Both 50-row synthetic and 1,000-row benchmark notebook suites executed cleanly with 0 errors.
 - [x] Phase 4 Steps 1 & 2 evaluation, SHAP explainability, and multi-criteria model selection executed and verified (notebook 11).
+- [x] Phase 5 Step 1 production inference pipeline implemented and verified (44/44 tests).
+- [x] Phase 5 Step 2 FastAPI REST API implemented and verified (47/47 tests).
+- [x] Phase 5 Step 3 Streamlit dashboard implemented and verified (38/38 tests, 129/129 total).
 - [x] Clean repository structure audited and verified.
+
 

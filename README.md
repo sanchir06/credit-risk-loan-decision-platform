@@ -128,8 +128,9 @@ The platform maintains two distinct datasets, each serving a specific architectu
 | **Phase 3** | **Credit Risk ML Modeling & Decisions** | Baseline (LR), Ensembles (RF, XGB), Risk Scoring (0–100) & Decision Policy (`03`, `04`, `05`, `08`, `09`) | ✅ **COMPLETE** |
 | **Comparative** | **Dataset Comparison & Governance** | Cross-dataset comparison, statistical power & governance audit in `10_dataset_comparison.ipynb` | ✅ **COMPLETE** |
 | **Phase 4** | **Model Evaluation, Explainability & Selection** | Multi-model evaluation, calibration, analytical thresholds, SHAP explainability, portfolio segmentation & model selection in `11_model_evaluation_explainability.ipynb` | ✅ **COMPLETE** |
-| **Phase 5** | **Risk Scoring & Decision Engine** | Probability of Default $\rightarrow$ 0–100 Risk Score, business cutoffs (Approve/Review/Reject) | ⏳ Planned |
-| **Phase 6** | **Product & Analyst Dashboard** | Interactive Streamlit interface for underwriting analysts | ⏳ Planned |
+| **Phase 5 Step 1** | **Production Inference Layer** | Artifact management, `CreditRiskPredictor`, input validation, risk policy, 44-test suite | ✅ **COMPLETE** |
+| **Phase 5 Step 2** | **FastAPI REST API** | REST endpoints (GET /health, GET /model-info, POST /predict), Swagger/ReDoc, 47-test suite | ✅ **COMPLETE** |
+| **Phase 5 Step 3** | **Streamlit Analyst Dashboard** | Interactive Streamlit interface over FastAPI REST API, 38-test suite | ✅ **COMPLETE** |
 
 ---
 
@@ -149,9 +150,12 @@ Credit Risk & Loan Decision System/
 │   │   ├── german_credit_1000.csv     # UCI benchmark dataset (1,000 rows × 21 cols)
 │   │   └── README.md                  # Raw data dictionary, provenance & governance rules
 │   ├── processed/
-│   │   └── README.md                  # Documentation of model-ready feature matrices
 │   └── synthetic/
-│       └── README.md                  # Specification for demo applicant fixtures
+│
+├── models/                            # [Phase 5] Production model artifacts
+│   ├── preprocessing.joblib           # Fitted ColumnTransformer (fitted on X_train)
+│   ├── credit_risk_model.joblib       # Fitted Logistic Regression model
+│   └── model_metadata.json            # Dataset, model, and pipeline metadata
 │
 ├── docs/
 │   └── INDIA_DATA_PRIVACY.md          # DPDP Act 2023 & RBI digital lending guidelines
@@ -168,6 +172,26 @@ Credit Risk & Loan Decision System/
 │   ├── 09_real_data_risk_scoring.ipynb     # Real Data Phase 3: Estimated PD, Internal Risk Score & Decisions
 │   ├── 10_dataset_comparison.ipynb         # Comparative Analysis: Synthetic vs. Real UCI Benchmark
 │   └── 11_model_evaluation_explainability.ipynb # Phase 4 Steps 1 & 2: Evaluation, Calibration, SHAP & Model Selection
+│
+├── streamlit_app.py                   # [Phase 5 Step 3] Streamlit credit risk dashboard
+│
+├── api/                               # [Phase 5 Step 2] FastAPI REST API
+│   ├── __init__.py
+│   ├── schemas.py                     # Pydantic request/response models
+│   └── main.py                        # FastAPI app (GET /health, GET /model-info, POST /predict)
+│
+├── scripts/                           # [Phase 5 Step 1] Executable scripts
+│   └── build_model_artifacts.py       # Reproducible artifact generation (train + save model)
+│
+├── examples/                          # Usage demonstrations & guides
+│   ├── run_prediction.py              # Phase 5 Step 1: Direct predictor demo (no server needed)
+│   ├── run_api_prediction.py          # Phase 5 Step 2: HTTP client demo (requires running API)
+│   └── run_streamlit_demo.md          # Phase 5 Step 3: Streamlit dashboard launch guide
+│
+├── tests/                             # Automated test suites
+│   ├── test_prediction_pipeline.py    # Phase 5 Step 1: 15-gate suite (44 tests)
+│   ├── test_api.py                    # Phase 5 Step 2: 18-gate suite (47 tests)
+│   └── test_streamlit_app.py          # Phase 5 Step 3: 16-gate suite (38 tests)
 │
 └── src/
     ├── README.md                      # Architecture guide for source modules
@@ -188,9 +212,14 @@ Credit Risk & Loan Decision System/
     ├── credit/
     │   ├── __init__.py
     │   └── credit_profile.py          # Simulated CIBIL bureau profile generator
-    └── features/
+    ├── models/                        # [Phase 5 Step 1] Artifact management
+    │   ├── __init__.py
+    │   └── model_artifacts.py         # Artifact paths, save/load/validate utilities
+    └── prediction/                    # [Phase 5 Step 1] Inference pipeline
         ├── __init__.py
-        └── feature_engineering.py     # Feature vector extraction for ML
+        ├── schemas.py                 # UCI input schema, validation, PredictionResult
+        ├── risk_policy.py             # Risk tier/decision policy (demonstration only)
+        └── predictor.py               # CreditRiskPredictor -- end-to-end inference
 ```
 
 ---
@@ -198,16 +227,47 @@ Credit Risk & Loan Decision System/
 ## 7. Technology Stack
 
 - **Data Manipulation**: `pandas>=2.0.0`, `numpy>=1.26.0`
-- **Machine Learning & Preprocessing**: `scikit-learn>=1.3.0` (`ColumnTransformer`, `StandardScaler`, `OneHotEncoder`, `train_test_split`, `cross_validate`), `xgboost>=2.0.0`
-- **Model Explainability & Interpretability**: `shap>=0.52.0` (LinearExplainer, TreeExplainer, Beeswarm & Waterfall plots)
-- **Data Visualization**: `matplotlib>=3.8.0`, `seaborn>=0.13.0`
+- **Machine Learning & Preprocessing**: `scikit-learn>=1.3.0`, `xgboost>=2.0.0`
+- **Model Serialization**: `joblib>=1.3.0`
+- **Model Explainability**: `shap>=0.52.0`
+- **Visualization**: `matplotlib>=3.8.0`, `seaborn>=0.13.0`
 - **Interactive Development**: `jupyterlab>=4.0.0`, `ipykernel>=6.0.0`
-- **Planned for Future Phases**: `streamlit` (Risk Analyst Dashboard)
+- **REST API (Phase 5 Step 2)**: `fastapi>=0.100.0`, `uvicorn>=0.20.0`
+- **HTTP Client**: `httpx>=0.24.0` (FastAPI TestClient + `run_api_prediction.py` + Streamlit HTTP client)
+- **Web Dashboard (Phase 5 Step 3)**: `streamlit>=1.30.0`
+- **Testing**: `pytest>=7.0.0` (129 tests across all 3 Phase 5 suites — 44 inference + 47 API + 38 UI/integration)
 
 ---
 
-## 8. Important Disclaimer
+## 8. Running the Application
+
+### Step 1: Build Model Artifacts (if not already generated)
+```bash
+python scripts/build_model_artifacts.py
+```
+
+### Step 2: Start the FastAPI REST API (Terminal 1)
+```bash
+python -m uvicorn api.main:app --reload
+```
+API available at: `http://127.0.0.1:8000` (Interactive docs: `http://127.0.0.1:8000/docs`)
+
+### Step 3: Start the Streamlit Dashboard (Terminal 2)
+```bash
+streamlit run streamlit_app.py
+```
+Dashboard available at: `http://localhost:8501`
+
+### Step 4: Run the Complete Test Suite
+```bash
+pytest tests/ -v
+```
+
+---
+
+## 9. Important Disclaimer
 
 > **Simulation & Benchmark Dataset Notice**:  
 > All applicant records, verification checks (PAN, Aadhaar KYC, Mobile OTP), bank statement data, and credit bureau scores in the synthetic dataset are **fictitious simulations** designed for educational, architectural, and workflow prototyping demonstrations. The UCI German Credit dataset is a historical credit-risk benchmark from 1994 (European banking context, Deutsche Mark currency) and does not represent contemporary Indian borrowers or live production banking data. No real personal data (PII) is stored or processed. In a commercial production environment, mock verification modules would be replaced with authorized, licensed API integrations complying with the **Digital Personal Data Protection (DPDP) Act 2023** and **Reserve Bank of India (RBI) Digital Lending Guidelines**.
+
 

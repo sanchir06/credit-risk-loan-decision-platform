@@ -167,3 +167,117 @@ A comprehensive file catalog documenting every active file in the repository: it
 ### E. `src/features/` *(Feature Vector Extraction Layer)*
 - **`src/features/__init__.py`**: Package initializer.
 - **`src/features/feature_engineering.py`**: Implements `calculate_age()` and `build_feature_vector()`, extracting credit risk features from `LoanApplicant` while strictly excluding identity verification flags.
+
+### F. `src/models/` *(Model Artifact Management — Phase 5 Step 1)*
+- **`src/models/__init__.py`**: Package initializer exposing `ModelArtifacts` and `ArtifactError`.
+- **`src/models/model_artifacts.py`**: Centralized artifact management module. Defines canonical paths (`models/preprocessing.joblib`, `models/credit_risk_model.joblib`, `models/model_metadata.json`), provides `save_preprocessor()`, `save_model()`, `save_metadata()`, `load_preprocessor()`, `load_model()`, `load_metadata()`, and `validate_all_artifacts()`. Uses `joblib` and `pathlib` throughout.
+
+### G. `src/prediction/` *(Production Inference Pipeline — Phase 5 Step 1)*
+- **`src/prediction/__init__.py`**: Package initializer exposing `CreditRiskPredictor`, `ApplicantInput`, `PredictionResult`, `RiskPolicy`, and `InputValidationError`.
+- **`src/prediction/schemas.py`**: UCI benchmark applicant input schema. Defines all 20 UCI German Credit feature names, categorical whitelists, numerical ranges, `ApplicantInput` dataclass with `validate()` and `from_dict()`, and `PredictionResult` output dataclass. Rejects NaN, Inf, invalid categoricals, and missing fields with human-readable errors.
+- **`src/prediction/risk_policy.py`**: Demonstration risk policy. Named constants (`TIER_LOW_MAX_PD=0.20`, `TIER_MEDIUM_MAX_PD=0.45`), frozen `RiskPolicy` dataclass with `compute_score()`, `assign_tier()`, `assign_decision()`. Documented explicitly as demonstration policy only — not RBI/regulatory thresholds.
+- **`src/prediction/predictor.py`**: `CreditRiskPredictor` class. End-to-end inference: load artifacts, validate input, transform via preprocessor (no `.fit()`), `predict_proba()`, apply risk policy, return `PredictionResult`. Zero `.fit()` on prediction path.
+
+---
+
+## 6. `models/` — Production Model Artifacts *(Phase 5 Step 1)*
+
+### `models/preprocessing.joblib`
+- **Purpose**: Fitted `ColumnTransformer` (7 numerical → `StandardScaler`, 13 categorical → `OneHotEncoder`). Fitted on `X_train` (800 records) only. Outputs 61 processed features.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: Saved preprocessor loaded by `CreditRiskPredictor` at inference time.
+
+### `models/credit_risk_model.joblib`
+- **Purpose**: Fitted `LogisticRegression(random_state=42, max_iter=1000, solver='lbfgs')`. Selected from Phase 4 evidence: Test ROC-AUC=0.8040 (best), Brier=0.1550 (best). Accepts 61-feature processed input.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: Production inference model loaded by `CreditRiskPredictor`.
+
+### `models/model_metadata.json`
+- **Purpose**: Human-readable JSON document containing dataset context, model configuration, training date, feature counts, risk score formula, calibration notice, model selection rationale, and phase metadata. Dynamically derived from fitted objects during build.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: Model provenance and audit trail.
+
+---
+
+## 7. `scripts/` — Executable Scripts *(Phase 5 Step 1)*
+
+### `scripts/build_model_artifacts.py`
+- **Purpose**: Reproducible artifact generation script. Loads `data/raw/german_credit_1000.csv`, performs stratified 80/20 split (random_state=42), fits `ColumnTransformer` on `X_train` only, trains Logistic Regression on processed `X_train`, saves all three artifacts. Enforces zero test leakage. Prints structured completion report.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: One-command artifact regeneration. Run: `python scripts/build_model_artifacts.py`
+
+---
+
+## 8. `examples/` — Demonstration Scripts *(Phase 5 Step 1)*
+
+### `examples/run_prediction.py`
+- **Purpose**: Demonstrates the production inference pipeline using one clearly synthetic and fictional applicant. Shows estimated PD, risk score, risk tier, and decision. Includes explicit disclaimer that this is not an Indian banking decision.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: Usage example. Run: `python examples/run_prediction.py`
+
+---
+
+## 9. `tests/` — Automated Test Suites
+
+### `tests/test_prediction_pipeline.py`
+- **Purpose**: 15-gate, 44-test validation suite for the production inference pipeline. Covers: artifact existence (Gates 1–3), loading (4–5), `predict_proba` support (6), feature dimension compatibility (7), end-to-end prediction (8), PD bounds (9), risk score bounds (10), valid tier (11), valid decision (12), invalid input rejection (13), NaN/Inf rejection (14), and no-refit enforcement via monkey-patching (15).
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE** (44/44 passing)
+- **Role**: Continuous validation. Run: `pytest tests/test_prediction_pipeline.py -v`
+
+### `tests/test_api.py`
+- **Purpose**: 18-gate, 47-test validation suite for the Phase 5 Step 2 FastAPI REST API. Uses FastAPI `TestClient` (no live server needed). Covers: app import (Gate 1), `/health` response (2), `model_loaded` dynamic detection (3), `/model-info` response (4), metadata correctness (5), valid prediction (6), PD bounds (7), risk score bounds (8), valid tier (9), valid decision (10), missing field rejection (11), invalid categorical rejection (12), invalid numeric rejection (13), NaN/Inf rejection (14), no `model.fit()` during prediction (15), no `preprocessor.fit()` during prediction (16), no dataset loaded during prediction (17), OpenAPI schema generation (18).
+- **Phase**: Phase 5 Step 2 ✅ **COMPLETE** (47/47 passing)
+- **Role**: API continuous validation. Run: `pytest tests/test_api.py -v`
+
+### `tests/test_streamlit_app.py`
+- **Purpose**: 16-gate, 38-test validation suite for the Phase 5 Step 3 Streamlit dashboard. Uses mocked `streamlit` and mocked `httpx` so tests run headlessly without a live server or browser session. Covers: module import (Gate 1), API URL config (2), `/health` integration (3), `/model-info` integration (4), `/predict` integration (5), 20-feature UCI payload generation (6-7), no training code in source (8), no CSV loading in source (9), HTTP 200/422/503 response handling (10-12), connection failure handling (13), prediction response processing (14), disclaimer presence (15), absence of Indian-specific fields (16).
+- **Phase**: Phase 5 Step 3 ✅ **COMPLETE** (38/38 passing; 129/129 total across all test suites)
+- **Role**: UI/client continuous validation. Run: `pytest tests/test_streamlit_app.py -v`
+
+---
+
+## 10. `api/` — FastAPI REST API *(Phase 5 Step 2)*
+
+### `api/__init__.py`
+- **Purpose**: Package initializer for the `api/` module. Marks the directory as an importable Python package.
+- **Phase**: Phase 5 Step 2 ✅ **COMPLETE**
+- **Role**: Package entry point.
+
+### `api/schemas.py`
+- **Purpose**: Pydantic request and response models for the FastAPI HTTP layer. `PredictRequest` mirrors the 20 UCI German Credit features with Pydantic `Field()` constraints for type coercion and OpenAPI documentation generation. `PredictResponse`, `HealthResponse`, `ModelInfoResponse`, and `ErrorResponse` define structured JSON output models. Categorical domain validation is delegated to `ApplicantInput.from_dict()` inside the predictor (no logic duplication).
+- **Phase**: Phase 5 Step 2 ✅ **COMPLETE**
+- **Role**: HTTP-layer schema definitions.
+
+### `api/main.py`
+- **Purpose**: FastAPI application instance and route definitions. Uses a lifespan context manager to load `CreditRiskPredictor` once at startup and store in `app.state`. Exposes three endpoints: `GET /health` (dynamic `model_loaded` check), `GET /model-info` (dynamic metadata from `predictor.metadata`), `POST /predict` (delegates entirely to `CreditRiskPredictor.predict()`). Custom exception handlers: `InputValidationError` → HTTP 422, `ArtifactError` → HTTP 503, catch-all → HTTP 500. No internal paths or stack traces exposed. No `.fit()` calls. No dataset loading. Full OpenAPI documentation via `/docs` and `/redoc`.
+- **Phase**: Phase 5 Step 2 ✅ **COMPLETE**
+- **Role**: API entry point. Run: `python -m uvicorn api.main:app --reload`
+
+---
+
+## 11. Updated `examples/` *(Phase 5 Step 1–3)*
+
+### `examples/run_prediction.py`
+- **Purpose**: Demonstrates the production inference pipeline using one clearly synthetic and fictional applicant. Shows estimated PD, risk score, risk tier, and decision. Includes explicit disclaimer that this is not an Indian banking decision.
+- **Phase**: Phase 5 Step 1 ✅ **COMPLETE**
+- **Role**: Direct predictor demo (no server needed). Run: `python examples/run_prediction.py`
+
+### `examples/run_api_prediction.py`
+- **Purpose**: Demonstrates calling the FastAPI REST API via `httpx`. First checks `GET /health` to verify the API is ready, then submits a synthetic applicant to `POST /predict` and prints estimated PD, risk score, risk tier, and decision. Includes explicit disclaimer. Requires the API to be running locally.
+- **Phase**: Phase 5 Step 2 ✅ **COMPLETE**
+- **Role**: HTTP client demo. Prerequisites: `python -m uvicorn api.main:app --reload` then `python examples/run_api_prediction.py`
+
+### `examples/run_streamlit_demo.md`
+- **Purpose**: Step-by-step user guide and architecture summary for launching and interacting with the Streamlit credit risk dashboard alongside the FastAPI backend.
+- **Phase**: Phase 5 Step 3 ✅ **COMPLETE**
+- **Role**: Dashboard user documentation.
+
+---
+
+## 12. `streamlit_app.py` — Streamlit Credit Risk Dashboard *(Phase 5 Step 3)*
+
+### `streamlit_app.py`
+- **Purpose**: Interactive, interview-friendly frontend dashboard for loan underwriting analysts. Functions strictly as a presentation/HTTP-client layer over the FastAPI REST API (`http://127.0.0.1:8000`). Renders a sidebar with dynamic API health check and model metadata, a structured 4-section form for the 20 UCI German Credit features, an "Assess Credit Risk" trigger, and a professional KPI result panel with risk tier badges, estimated PD, score calculation, attribution disclaimers, and error banners. Contains zero training code, zero CSV reading, and zero artifact loading.
+- **Phase**: Phase 5 Step 3 ✅ **COMPLETE**
+- **Role**: Primary user interface. Run: `streamlit run streamlit_app.py`
+
